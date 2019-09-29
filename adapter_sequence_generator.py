@@ -37,13 +37,15 @@ with open(fastq_file, 'r') as fh:
             temp_adapter_seq = adapter_seqs[random.randint(0, (len(adapter_seqs) -1))]
             #temp_trimmed_adapter_seq= temp_adapter_seq
             temp_trimmed_adapter_seq = temp_adapter_seq[0:random.randint(0,(len(temp_adapter_seq) -1))]
+            #print(record['sequence'])
             record['sequence'] = temp_trimmed_adapter_seq + record['sequence']
+            #print(record['sequence'])
             #print(record['quality'])
             record['quality'] = record['quality'] +  ('I' * len(temp_trimmed_adapter_seq))
             #print(record['quality'])
             #print(record['quality'])
             #print(record['sequence'])
-            for part in lines: 
-            	f.write(part + "\n")
+            for part in record: 
+            	f.write(record[part] + "\n")
 
             lines = []
