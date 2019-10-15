@@ -1,4 +1,4 @@
-#raw counts from salmon files
+# takes salmon files and returns csv with gene, count, chromosome number, and band
 library("Rsamtools")
 library("Rsubread")
 library("GenomicFeatures")
