@@ -105,7 +105,7 @@ with open('Read_counts.csv', "w") as f:
 subprocess.call('mkdir alignments', shell = True)
 subprocess.call('mv *.sam alignments; mv *.bt2 alignments', shell = True)
 
-print('fastqc') 
+print('Running FASTQC') 
 subprocess.call('FASTQC *R1*', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
 subprocess.call('mkdir fastqc_files', shell = True)
 subprocess.call('mv *fastqc* fastqc_files', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
