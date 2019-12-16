@@ -5,6 +5,7 @@ import sys
 import csv
 import glob 
 import time
+import gzip
 import pysam
 import fnmatch
 import subprocess
@@ -14,12 +15,19 @@ Entrez.email = "vpeddu@uw.edu"
 
 #List all R1 fastq files in the current folder 
 fastqs = fnmatch.filter(os.listdir(), '*R1*')
-
+print(fastqs)
 print('Counting reads in fastq files')
 
+
 #Function to count lines in a file
-def file_len(fname):
-    with open(fname) as f:
+def file_len_zipped(fname):
+    with gzip.open(fname, 'rb') as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+
+def file_len_unzipped(fname):
+    with gzip.open(fname, 'rb') as f:
         for i, l in enumerate(f):
             pass
     return i + 1
@@ -29,7 +37,10 @@ read_counts.append('read counts')
 
 #counts lines in fastq file and divides by 4 to get total read count
 for fq in fastqs: 
-	total_lines = file_len(fq)
+	if(fq.lower().endswith('.gz')):
+		total_lines = file_len_zipped(fq)
+	else:
+		total_lines = file_len_unzipped(fq)
 	reads = total_lines / 4 
 	read_counts.append(reads)
 
