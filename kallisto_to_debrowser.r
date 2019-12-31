@@ -1,3 +1,5 @@
+# Script to go from folder of Kallisto abundance files to DEBrowser ready counts input
+
 library("debrowser")
 library("Rsamtools")
 library("Rsubread")
@@ -22,16 +24,13 @@ library("reactome.db")
 library("tidyverse")
 library("org.Hs.eg.db")
 
+args = commandArgs(trailingOnly=TRUE)
 
+f_path<-args[1]
+classifications_file<-args[2]
 
-setwd('/Users/gerbix/Documents/vikas/hepatosplenic_lymphoma_rnaseq/github_repo/debrowser')
-filenames<-list.files('/Users/gerbix/Documents/vikas/hepatosplenic_lymphoma_rnaseq/hiseq_run/kallisto_quant/kallisto_files')
-classifications<-read.csv('/Users/gerbix/Documents/vikas/hepatosplenic_lymphoma_rnaseq/github_repo/hiseq_ferreiro_hstcl_ptcl_comparison/classification_files/deseq_hiseq_hstclvsptcl_kallisto.txt', sep = '\t')
-
-#edit to remove files
-classifications<-classifications[-which(classifications$sample=='HP08-15400'),]
-
-classifications<-classifications[classifications$condition == 'HSTCL' | classifications$condition == "PTCL",]
+filenames<-list.files(f_path, pattern = '*.tsv')
+classifications<-read.csv(classifications_file, sep = '\t')
 
 txdb <- EnsDb.Hsapiens.v86
 tx2gene <- transcripts(txdb, return.type="DataFrame")
@@ -43,6 +42,7 @@ df<-txi$counts
 colnames(df)<-classifications$sample
 df<-as.data.frame(df)
 
+# Annotates by gene symbol
 mart <- useMart("ENSEMBL_MART_ENSEMBL")
 mart <- useDataset("hsapiens_gene_ensembl", mart)
 annotLookup <- getBM(
@@ -57,13 +57,14 @@ df$gene_id<-rownames(df)
 merged<-merge(df, annotLookup, by.x="gene_id", by.y="ensembl_gene_id") 
 merged$gene_id<-NULL
 
+# Merges TPMs by gene symbol
 merged_aggregated<-aggregate(merged[,c(1:ncol(merged)-1)], by=list(Category=merged$external_gene_name), FUN=sum)
 
 colnames(merged_aggregated)[1]<-'gene'
 
-#write.csv(merged_aggregated,'hstcl_debrowser_counts.csv')
-write.table(merged_aggregated, file = "kallisto_hstcl_debrowser_counts.txt", sep = "\t", row.names = FALSE)
-startDEBrowser()
+# Writes DEBrowser ready table
+write.table(merged_aggregated, file = "DEBrowser_input.txt", sep = "\t", row.names = FALSE)
+
 
 
 
