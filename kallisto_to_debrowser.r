@@ -10,9 +10,7 @@ library("BiocParallel")
 library("DESeq2")
 library("tximport")
 library("readr")
-library("tximportData")
 library("ensembldb")
-library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 library('EnsDb.Hsapiens.v86')
 library("BiocParallel")
 library("pheatmap")
@@ -38,7 +36,9 @@ tx2gene <- as.data.frame(tx2gene[,c("tx_id", "gene_id")])
 txi <- tximport(as.character(filenames), type = "kallisto", tx2gene = tx2gene, ignoreTxVersion=TRUE)
 df<-txi$counts
 
-colnames(df)<-classifications$sample
+filenames_short<-list.files(f_path, pattern = "*.tsv")
+
+colnames(df)<-filenames_short
 df<-as.data.frame(df)
 
 # Annotates by gene symbol
