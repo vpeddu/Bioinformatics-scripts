@@ -28,16 +28,14 @@ library("org.Hs.eg.db")
 args = commandArgs(trailingOnly=TRUE)
 
 f_path<-args[1]
-classifications_file<-args[2]
 
-filenames<-list.files(f_path, pattern = '*.tsv')
-classifications<-read.csv(classifications_file, sep = '\t')
+filenames<-list.files(f_path, pattern = '*.tsv', full.names = TRUE)
 
 txdb <- EnsDb.Hsapiens.v86
 tx2gene <- transcripts(txdb, return.type="DataFrame")
 tx2gene <- as.data.frame(tx2gene[,c("tx_id", "gene_id")])
 
-txi <- tximport(as.character(classifications$file), type = "kallisto", tx2gene = tx2gene, ignoreTxVersion=TRUE)
+txi <- tximport(as.character(filenames), type = "kallisto", tx2gene = tx2gene, ignoreTxVersion=TRUE)
 df<-txi$counts
 
 colnames(df)<-classifications$sample
