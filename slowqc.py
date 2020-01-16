@@ -31,12 +31,14 @@ if(args.kallisto):
 	print('Running Kallisto with arguments: ' + args.kallisto)
 	for fq in range(len(r1_fastqs)): 
 		fq_name = (r1_fastqs[fq].split('_R')[0])
-		print('Running Kallisto for' + fq_name)
+		print('Running Kallisto for ' + fq_name)
 		kallisto_cmd = 'kallisto quant ' + args.kallisto + " -o " + fq_name + ' ' + r1_fastqs[fq] + ' ' + r2_fastqs[fq]
 		#print(kallisto_cmd)
 		subprocess.call(kallisto_cmd, shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
-		count_cmd = "awk '{total = total + $4}END{print total} '" + fq_name + '/abundance.tsv'
-		kallisto_mapped_read_count.append(int(subprocess.check_output(count_cmd, shell = True).decode('utf-8').strip()))
+		count_cmd = "awk '{total = total + $4}END{print total}' " + fq_name + '/abundance.tsv'
+		print(count_cmd)
+		kallisto_mapped_read_count.append((subprocess.check_output(count_cmd, shell = True).decode('utf-8').strip()))
+		print(kallisto_mapped_read_count)
 	
 
 #print(fastqs)
@@ -98,7 +100,7 @@ print('Counting 5.8s reads')
 ribosome_5 = Entrez.efetch(db="nucleotide", id="NR_146147.1", rettype="fasta", retmode="text")
 
 ribosome_5_file = open("5s.fasta", "w")
-ribosome_5_file.write(ribosome_18.read())
+ribosome_5_file.write(ribosome_5.read())
 ribosome_5_file.close()
 
 #Builds Bowtie2 index for the 18s reference
@@ -163,7 +165,10 @@ for fq in range(len(r1_fastqs)):
 
 fq_column_header = 'fastq file'
 fastqs =[fq_column_header] + fastqs
-final = zip(fastqs, read_counts, mito_count, ribosome_5_count, ribosome_18_count, ribosome_28_count)
+if(args.kallisto):
+	final = zip(fastqs, read_counts, kallisto_mapped_read_count ,mito_count, ribosome_5_count, ribosome_18_count, ribosome_28_count)
+else:
+	final = zip(fastqs, read_counts, mito_count, ribosome_5_count, ribosome_18_count, ribosome_28_count)
 
 print('Writing read counts file')
 
