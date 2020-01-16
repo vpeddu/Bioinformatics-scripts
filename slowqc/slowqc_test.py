@@ -8,29 +8,45 @@ import time
 import gzip
 import pysam
 import fnmatch
+import logging
 import argparse
 import subprocess
+import urllib.request
 from Bio import Entrez
 from functools import reduce
 Entrez.email = "vpeddu@uw.edu"
 
 
+#Create log file
+logging.basicConfig(filename='slowqc.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+
 
 #List all R1 fastq files in the current folder 
 r1_fastqs = fnmatch.filter(os.listdir(), '*R1*')
+r1_fastqs.sort()
 r2_fastqs = fnmatch.filter(os.listdir(), '*R2*')
+r2_fastqs.sort()
+
+logging.info(r1_fastqs)
+logging.info(r2_fastqs)
+
 
 #Parse arguments 
 parser = argparse.ArgumentParser(description = "input trimmomatic flags")
 parser.add_argument("--trimmomatic", dest='trimmomatic',nargs = '?' ,type=str, 
 	help="Input flags after 'trimmomatic PE' enclosed in double quotes \
-	excluding the filenames")
+	excluding the filenames. Adapter file must be named adapters.fa. This will \
+	automatically download from github")
 parser.add_argument("--kallisto", dest='kallisto',type=str, help="Input all flags after 'kallisto_quant' enclosed in double quotes")
+
 args = parser.parse_args()
 
 #Run Trimmomatic
 if(args.trimmomatic):
-	#print('laksdjflaksjflksjdflksfj')
+	#download adapters.fa from github
+	url = "https://github.com/vpeddu/Bioinformatics-scripts/raw/master/slowqc/adapters.fa"
+	filename, headers = urllib.request.urlretrieve(url, filename="adapters.fa")
 	trimmed_read_count = []
 	trimmed_read_count.append('Trimmed read count')
 	print('Running Trimmomatic with arguments: ' + args.kallisto)
@@ -40,12 +56,11 @@ if(args.trimmomatic):
 		trim_r1_name = 'trimmed.' + r1_fastqs[fq]
 		trim_r2_name = 'trimmed.' + r2_fastqs[fq]
 		trimmomatic_cmd = 'trimmomatic PE ' + ' ' + r1_fastqs[fq] + ' ' + r2_fastqs[fq] + ' ' + trim_r1_name + ' /dev/null/ ' + trim_r2_name + ' /dev/null/ ' + args.trimmomatic
+		logging.info(trimmomatic_cmd)
 		print(trimmomatic_cmd)
 		subprocess.call(trimmomatic_cmd, shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
-		#count_cmd = "awk '{total = total + $4}END{print total}' " + fq_name + '/abundance.tsv'
-		#print(count_cmd)
-		#trimmed_read_count.append((subprocess.check_output(count_cmd, shell = True).decode('utf-8').strip()))
-		#print(trimmed_read_count)
+
+	#Redefining fastq list so everything below works off of the trimmed files 
 	trimmed_files = fnmatch.filter(os.listdir(), 'trimmed.*')
 	r1_fastqs = fnmatch.filter(trimmed_files, '*R1*')
 	r2_fastqs = fnmatch.filter(trimmed_files, '*R2*')
@@ -60,7 +75,7 @@ if(args.kallisto):
 		fq_name = (r1_fastqs[fq].split('_R')[0])
 		print('Running Kallisto for ' + fq_name)
 		kallisto_cmd = 'kallisto quant ' + args.kallisto + " -o " + fq_name + ' ' + r1_fastqs[fq] + ' ' + r2_fastqs[fq]
-		#print(kallisto_cmd)
+		logging.info(kallisto_cmd)
 		subprocess.call(kallisto_cmd, shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
 		count_cmd = "awk '{total = total + $4}END{print total}' " + fq_name + '/abundance.tsv'
 		print(count_cmd)
@@ -140,7 +155,7 @@ ribosome_5_count.append('5s counts')
 for fq in range(len(r1_fastqs)): 
 	fq_name = (r1_fastqs[fq].split('_R')[0])
 	out =  fq_name + '.5s.sam'
-	cmd = 'bowtie2 -x 18s -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
+	cmd = 'bowtie2 -x 5s -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
 	subprocess.call(cmd, shell = True, stderr = subprocess.DEVNULL)
 	ribosome_5_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
@@ -191,7 +206,7 @@ for fq in range(len(r1_fastqs)):
 	ribosome_28_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
 fq_column_header = 'fastq file'
-fastqs =[fq_column_header] + fastqs
+fastqs =[fq_column_header] + r1_fastqs
 if(args.kallisto):
 	final = zip(fastqs, read_counts, kallisto_mapped_read_count ,mito_count, ribosome_5_count, ribosome_18_count, ribosome_28_count)
 else:
@@ -206,9 +221,11 @@ with open('Read_counts.csv', "w") as f:
         writer.writerow(row)
 
 	
-#Makes a folder (alignments) for intermediate files to tidy everything up 
+#Tidy everything up  
 subprocess.call('mkdir alignments', shell = True)
 subprocess.call('mv *.sam alignments; mv *.bt2 alignments', shell = True)
+if args.trimmomatic: 
+	subprocess.call('mkdir trimmed_files; mv trimmed.* trimmed_files', shell = True)
 
 #Runs FASTQC
 print('Running FASTQC') 
