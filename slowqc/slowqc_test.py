@@ -20,8 +20,6 @@ Entrez.email = "vpeddu@uw.edu"
 #Create log file
 logging.basicConfig(filename='slowqc.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
 
-
-
 #List all R1 fastq files in the current folder 
 r1_fastqs = fnmatch.filter(os.listdir(), '*R1*')
 r1_fastqs.sort()
@@ -31,14 +29,15 @@ r2_fastqs.sort()
 logging.info(r1_fastqs)
 logging.info(r2_fastqs)
 
-
 #Parse arguments 
 parser = argparse.ArgumentParser(description = "input trimmomatic flags")
 parser.add_argument("--trimmomatic", dest='trimmomatic',nargs = '?' ,type=str, 
 	help="Input flags after 'trimmomatic PE' enclosed in double quotes \
 	excluding the filenames. Adapter file must be named adapters.fa. This will \
 	automatically download from github")
-parser.add_argument("--kallisto", dest='kallisto',type=str, help="Input all flags after 'kallisto_quant' enclosed in double quotes")
+parser.add_argument("--kallisto", dest = 'kallisto',type = str, help = "Input all flags after 'kallisto_quant' enclosed in double quotes")
+parser.add_argument("--debrowser", dest = 'debrowser', type = bool, help = "Takes kallisto output and rewrites as debrowser ready input file")
+parser.add_argument("--fastqc", dest = 'fastqc', type = bool, help = "Runs fastqc on all trimmed files")
 
 args = parser.parse_args()
 
@@ -49,7 +48,7 @@ if(args.trimmomatic):
 	filename, headers = urllib.request.urlretrieve(url, filename="adapters.fa")
 	trimmed_read_count = []
 	trimmed_read_count.append('Trimmed read count')
-	print('Running Trimmomatic with arguments: ' + args.kallisto)
+	print('Running Trimmomatic with arguments: ' + args.trimmomatic)
 	for fq in range(len(r1_fastqs)): 
 		fq_name = (r1_fastqs[fq].split('_R')[0])
 		print('Trimming ' + fq_name)
@@ -57,7 +56,6 @@ if(args.trimmomatic):
 		trim_r2_name = 'trimmed.' + r2_fastqs[fq]
 		trimmomatic_cmd = 'trimmomatic PE ' + ' ' + r1_fastqs[fq] + ' ' + r2_fastqs[fq] + ' ' + trim_r1_name + ' /dev/null/ ' + trim_r2_name + ' /dev/null/ ' + args.trimmomatic
 		logging.info(trimmomatic_cmd)
-		print(trimmomatic_cmd)
 		subprocess.call(trimmomatic_cmd, shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
 
 	#Redefining fastq list so everything below works off of the trimmed files 
@@ -73,19 +71,15 @@ if(args.kallisto):
 	print('Running Kallisto with arguments: ' + args.kallisto)
 	for fq in range(len(r1_fastqs)): 
 		fq_name = (r1_fastqs[fq].split('_R')[0])
+		fq_name = fq_name.split('trimmed.')[1]
 		print('Running Kallisto for ' + fq_name)
 		kallisto_cmd = 'kallisto quant ' + args.kallisto + " -o " + fq_name + ' ' + r1_fastqs[fq] + ' ' + r2_fastqs[fq]
 		logging.info(kallisto_cmd)
 		subprocess.call(kallisto_cmd, shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
 		count_cmd = "awk '{total = total + $4}END{print total}' " + fq_name + '/abundance.tsv'
-		print(count_cmd)
 		kallisto_mapped_read_count.append((subprocess.check_output(count_cmd, shell = True).decode('utf-8').strip()))
-		print(kallisto_mapped_read_count)
 	
-
-#print(fastqs)
 print('Counting reads in fastq files')
-
 
 #Function to count lines in a file
 def file_len_zipped(fname):
@@ -133,6 +127,7 @@ for fq in range(len(r1_fastqs)):
 	fq_name = (r1_fastqs[fq].split('_R')[0])
 	out =  fq_name + '.mitochondria.sam'
 	cmd = 'bowtie2 -x mitochondria -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
+	logging.info(cmd)
 	subprocess.call(cmd, shell = True, stderr = subprocess.DEVNULL)
 	mito_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
@@ -156,6 +151,7 @@ for fq in range(len(r1_fastqs)):
 	fq_name = (r1_fastqs[fq].split('_R')[0])
 	out =  fq_name + '.5s.sam'
 	cmd = 'bowtie2 -x 5s -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
+	logging.info(cmd)
 	subprocess.call(cmd, shell = True, stderr = subprocess.DEVNULL)
 	ribosome_5_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
@@ -179,6 +175,7 @@ for fq in range(len(r1_fastqs)):
 	fq_name = (r1_fastqs[fq].split('_R')[0])
 	out =  fq_name + '.18s.sam'
 	cmd = 'bowtie2 -x 18s -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
+	logging.info(cmd)
 	subprocess.call(cmd, shell = True, stderr = subprocess.DEVNULL)
 	ribosome_18_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
@@ -202,6 +199,7 @@ for fq in range(len(r1_fastqs)):
 	fq_name = (r1_fastqs[fq].split('_R')[0])
 	out =  fq_name + '.28s.sam'
 	cmd = 'bowtie2 -x 28s -p 8 --no-unal -1 ' + r1_fastqs[fq] + ' -2 ' + r2_fastqs[fq] + ' -S ' + out
+	logging.info(cmd)
 	subprocess.call(cmd, shell = True, stderr = subprocess.DEVNULL)
 	ribosome_28_count.append(int(subprocess.check_output('cat '+ out + ' | wc -l ', shell = True).decode('utf-8').strip())-3)
 
@@ -227,8 +225,19 @@ subprocess.call('mv *.sam alignments; mv *.bt2 alignments', shell = True)
 if args.trimmomatic: 
 	subprocess.call('mkdir trimmed_files; mv trimmed.* trimmed_files', shell = True)
 
+#Runs kallisto_to_debrowser.r 
+if args.debrowser:
+	print('Creating debrowser formatted input')
+	tsv_cmd = 'mkdir kallisto_tsvs ; for i in `find . -name *.tsv`; do  temp=`echo $i | cut -d / -f2`; newfilename="$temp"".tsv"; cp $temp/abundance.tsv kallisto_tsvs/$newfilename; done'
+	subprocess.call(tsv_cmd, shell = True, stderr = subprocess.DEVNULL)
+	subprocess.call('rscript --vanilla kallisto_to_debrowser.r kallisto_tsvs/', shell = True , stderr = subprocess.DEVNULL)
+
+
+
+
 #Runs FASTQC
-print('Running FASTQC') 
-subprocess.call('FASTQC *R1*', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
-subprocess.call('mkdir fastqc_files', shell = True)
-subprocess.call('mv *fastqc* fastqc_files', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
+if args.fastqc:
+	print('Running FASTQC') 
+	subprocess.call('FASTQC *R1*', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
+	subprocess.call('mkdir fastqc_files', shell = True)
+	subprocess.call('mv *fastqc* fastqc_files', shell = True, stderr = subprocess.DEVNULL, stdout = subprocess.DEVNULL)
