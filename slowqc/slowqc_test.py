@@ -228,6 +228,8 @@ if args.trimmomatic:
 #Runs kallisto_to_debrowser.r 
 if args.debrowser:
 	print('Creating debrowser formatted input')
+	url = "https://github.com/vpeddu/Bioinformatics-scripts/raw/master/kallisto_to_debrowser.r"
+	filename, headers = urllib.request.urlretrieve(url, filename="kallisto_to_debrowser.r")
 	tsv_cmd = 'mkdir kallisto_tsvs ; for i in `find . -name *.tsv`; do  temp=`echo $i | cut -d / -f2`; newfilename="$temp"".tsv"; cp $temp/abundance.tsv kallisto_tsvs/$newfilename; done'
 	subprocess.call(tsv_cmd, shell = True, stderr = subprocess.DEVNULL)
 	subprocess.call('rscript --vanilla kallisto_to_debrowser.r kallisto_tsvs/', shell = True , stderr = subprocess.DEVNULL)
