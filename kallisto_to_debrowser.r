@@ -1,6 +1,5 @@
 # Script to go from folder of Kallisto abundance files to DEBrowser ready counts input
 # Arg 1 = file path of folder containing Kallisto output 
-# Arg 2 = Tximport style classifications file
 library("debrowser")
 library("Rsamtools")
 library("Rsubread")
@@ -63,8 +62,3 @@ colnames(merged_aggregated)[1]<-'gene'
 
 # Writes DEBrowser ready table
 write.table(merged_aggregated, file = "DEBrowser_input.txt", sep = "\t", row.names = FALSE)
-
-
-
-
-
