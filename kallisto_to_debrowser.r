@@ -55,7 +55,7 @@ df$gene_id<-rownames(df)
 merged<-merge(df, annotLookup, by.x="gene_id", by.y="ensembl_gene_id") 
 merged$gene_id<-NULL
 
-# Merges TPMs by gene symbol
+# Merges counts by gene symbol
 merged_aggregated<-aggregate(merged[,c(1:ncol(merged)-1)], by=list(Category=merged$external_gene_name), FUN=sum)
 
 colnames(merged_aggregated)[1]<-'gene'
