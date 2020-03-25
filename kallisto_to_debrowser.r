@@ -31,6 +31,7 @@ df<-as.data.frame(df)
 # Annotates by gene symbol
 mart <- useMart("ENSEMBL_MART_ENSEMBL")
 mart <- useDataset("hsapiens_gene_ensembl", mart)
+us_mart <- useEnsembl(biomart = "ensembl", mirror = "uswest")
 annotLookup <- getBM(
   mart=mart,
   attributes=c("ensembl_gene_id", "external_gene_name"),
