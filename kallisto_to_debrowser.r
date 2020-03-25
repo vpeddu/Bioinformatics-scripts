@@ -1,26 +1,14 @@
 # Script to go from folder of Kallisto abundance files to DEBrowser ready counts input
 # Arg 1 = file path of folder containing Kallisto output 
 library("debrowser")
-library("Rsamtools")
-library("Rsubread")
-library("GenomicFeatures")
-library("GenomicAlignments")
-library("BiocParallel")
 library("DESeq2")
 library("tximport")
 library("readr")
 library("ensembldb")
-library('EnsDb.Hsapiens.v86')
-library("BiocParallel")
-library("pheatmap")
-library("RColorBrewer")
-library("gplots")
 library("biomaRt")
-library("svMisc")
-library("fgsea")
-library("reactome.db")
 library("tidyverse")
 library("org.Hs.eg.db")
+library("EnsDb.Hsapiens.v86")
 
 args = commandArgs(trailingOnly=TRUE)
 
